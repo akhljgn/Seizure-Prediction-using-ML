@@ -10,7 +10,6 @@ from scipy.signal import butter, filtfilt
 # =====================================================================================
 st.set_page_config(
     page_title="EEG Seizure Detection System",
-    
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -22,31 +21,66 @@ if 'page' not in st.session_state:
     st.session_state.page = 'home'
 
 # =====================================================================================
-# 3. CUSTOM STYLING
+# 3. CUSTOM STYLING WITH DARK MODE SUPPORT
 # =====================================================================================
 st.markdown("""
 <style>
+    /* ========== BROWSER THEME DETECTION ========== */
+    :root {
+        --primary-color: #26a69a;
+        --primary-dark: #00897b;
+        --primary-darker: #00695c;
+    }
+    
+    /* Light mode (default browser preference) */
+    @media (prefers-color-scheme: light) {
+        :root {
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --bg-card: #ffffff;
+            --bg-gradient: linear-gradient(135deg, #e8f5e9 0%, #b2dfdb 100%);
+            --shadow: rgba(0, 0, 0, 0.1);
+            --border: #e0e0e0;
+            --info-bg: #e0f2f1;
+            --info-border: #26a69a;
+        }
+    }
+    
+    /* Dark mode (browser preference) */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --bg-card: #1e1e1e;
+            --bg-gradient: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
+            --shadow: rgba(0, 0, 0, 0.4);
+            --border: #333333;
+            --info-bg: #1a3a3a;
+            --info-border: #26a69a;
+        }
+    }
+    
+    /* Background gradient that adapts */
+    .stApp {
+        background: var(--bg-gradient);
+    }
+    
     /* Main title styling */
     .main-title {
         text-align: center;
         font-size: 2.8rem;
         font-weight: 700;
-        color: #2c3e50;
+        color: var(--text-primary);
         margin-bottom: 2rem;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    /* Background gradient */
-    .stApp {
-        background: linear-gradient(135deg, #e8f5e9 0%, #b2dfdb 100%);
+        text-shadow: 0 2px 4px var(--shadow);
     }
     
     /* Card styling */
     div[data-testid="stVerticalBlock"] > div:has(div.element-container) {
-        background: white;
+        background: var(--bg-card);
         padding: 2rem;
         border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px var(--shadow);
     }
     
     /* Section headers */
@@ -54,17 +88,17 @@ st.markdown("""
         text-align: center;
         font-size: 1.5rem;
         font-weight: 600;
-        color: #34495e;
+        color: var(--text-primary);
         margin-bottom: 1.5rem;
         padding-bottom: 0.5rem;
-        border-bottom: 3px solid #26a69a;
+        border-bottom: 3px solid var(--primary-color);
     }
     
     /* Button styling */
     .stButton > button {
         width: 100%;
-        background: linear-gradient(135deg, #26a69a, #00897b);
-        color: white;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white !important;
         border-radius: 12px;
         padding: 0.75rem 1.5rem;
         font-size: 16px;
@@ -77,17 +111,21 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #00897b, #00695c);
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-darker));
         box-shadow: 0 6px 20px rgba(38, 166, 154, 0.4);
         transform: translateY(-2px);
     }
     
     /* File uploader styling */
     .stFileUploader {
-        background: #e0f2f1;
-        border: 2px dashed #26a69a;
+        background: var(--info-bg);
+        border: 2px dashed var(--info-border);
         border-radius: 12px;
         padding: 1rem;
+    }
+    
+    .stFileUploader label {
+        color: var(--text-primary) !important;
     }
     
     /* Hide Streamlit branding */
@@ -103,9 +141,9 @@ st.markdown("""
     .hero-section {
         text-align: center;
         padding: 3rem 2rem;
-        background: white;
+        background: var(--bg-card);
         border-radius: 20px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 15px 40px var(--shadow);
         margin: 2rem auto;
         max-width: 900px;
     }
@@ -113,15 +151,16 @@ st.markdown("""
     .hero-title {
         font-size: 3.5rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #26a69a, #00897b);
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin-bottom: 1rem;
     }
     
     .hero-subtitle {
         font-size: 1.3rem;
-        color: #7f8c8d;
+        color: var(--text-secondary);
         margin-bottom: 2rem;
         line-height: 1.6;
     }
@@ -132,7 +171,7 @@ st.markdown("""
         border-radius: 16px;
         margin: 1rem 0;
         text-align: center;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 25px var(--shadow);
     }
     
     .seizure {
@@ -148,7 +187,72 @@ st.markdown("""
     /* Metric cards */
     div[data-testid="stMetricValue"] {
         font-size: 2rem;
-        color: #26a69a;
+        color: var(--primary-color) !important;
+    }
+    
+    div[data-testid="stMetricLabel"] {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Info boxes */
+    .info-box {
+        background: var(--info-bg);
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .info-box p {
+        margin: 0;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    
+    .info-box ul {
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+    }
+    
+    /* Spinner color */
+    .stSpinner > div {
+        border-top-color: var(--primary-color) !important;
+    }
+    
+    /* Download button specific */
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+        color: white !important;
+    }
+    
+    /* Alert/Error messages */
+    .stAlert {
+        background: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Success message */
+    .stSuccess {
+        background-color: rgba(38, 166, 154, 0.1) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Placeholder text */
+    .placeholder-text {
+        text-align: center;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin-top: 100px;
+        font-size: 1.2rem;
+    }
+    
+    /* Footer text */
+    .footer-text {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        padding: 2rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -174,14 +278,14 @@ def load_assets():
         pca = joblib.load("pca.pkl")
         return model, scaler, pca
     except FileNotFoundError as e:
-        st.error(f" Model files not found! Please ensure all required files are in the directory.")
+        st.error(f"Model files not found. Please ensure all required files are in the directory.")
         return None, None, None
 
 # =====================================================================================
 # 5. HOME PAGE
 # =====================================================================================
 def show_home_page():
-    st.markdown('<h1 class="main-title"> EEG Seizure Prediction System</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">EEG Seizure Prediction System</h1>', unsafe_allow_html=True)
     
     # Hero Section
     st.markdown("""
@@ -194,85 +298,17 @@ def show_home_page():
     </div>
     """, unsafe_allow_html=True)
     
-    # st.markdown("<br>", unsafe_allow_html=True)
-    
-    # # Information cards
-    # st.markdown("""
-    # <div style="text-align: center; max-width: 800px; margin: 0 auto;">
-    #     <h3 style="color: #2c3e50; margin-bottom: 1.5rem;">How It Works</h3>
-    #     <p style="color: #7f8c8d; font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem;">
-    #         Upload your EEG data file (CSV format with 178 features), and our system will:
-    #         <br><br>
-    #         1️⃣ Apply advanced <strong>noise filtering</strong> using Butterworth band-pass filters
-    #         <br>
-    #         2️⃣ Perform <strong>signal standardization</strong> and dimensionality reduction
-    #         <br>
-    #         3️⃣ Use <strong>machine learning</strong> to detect seizure patterns
-    #         <br>
-    #         4️⃣ Provide detailed <strong>analysis and visualization</strong> of results
-    #     </p>
-    # </div>
-    # """, unsafe_allow_html=True)
-    
-    # # Key Features
-    # col1, col2, col3 = st.columns(3)
-    
-    # with col1:
-    #     st.markdown("""
-    #     <div style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center; height: 100%;">
-    #         <div style="font-size: 3rem; margin-bottom: 1rem;">🔬</div>
-    #         <div style="font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem;">Medical Grade</div>
-    #         <div style="color: #7f8c8d; font-size: 1rem;">
-    #             Clinically validated algorithms for accurate detection
-    #         </div>
-    #     </div>
-    #     """, unsafe_allow_html=True)
-    
-    # with col2:
-    #     st.markdown("""
-    #     <div style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center; height: 100%;">
-    #         <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-    #         <div style="font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem;">Fast Analysis</div>
-    #         <div style="color: #7f8c8d; font-size: 1rem;">
-    #             Real-time processing with instant results
-    #         </div>
-    #     </div>
-    #     """, unsafe_allow_html=True)
-    
-    # with col3:
-    #     st.markdown("""
-    #     <div style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); text-align: center; height: 100%;">
-    #         <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-    #         <div style="font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 0.5rem;">Detailed Reports</div>
-    #         <div style="color: #7f8c8d; font-size: 1rem;">
-    #             Comprehensive visualizations and metrics
-    #         </div>
-    #     </div>
-    #     """, unsafe_allow_html=True)
-    
-    # st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    # # Get Started Section
-    # st.markdown("""
-    # <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-    #     <h3 style="color: #2c3e50; margin-bottom: 1.5rem;">Ready to Analyze EEG Data?</h3>
-    #     <p style="color: #7f8c8d; font-size: 1.1rem; margin-bottom: 2rem;">
-    #         Click the button below to access the analysis dashboard and start detecting seizure activity.
-    #     </p>
-    # </div>
-    # """, unsafe_allow_html=True)
-    
     # Center the button
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button(" Start Analysis", use_container_width=True):
+        if st.button("Start Analysis", use_container_width=True):
             st.session_state.page = 'analysis'
             st.rerun()
     
     # Footer
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown("""
-    <div style="text-align: center; color: #95a5a6; font-size: 0.9rem; padding: 2rem;">
+    <div class="footer-text">
         <p>Powered by <strong>Random Forest</strong> with <strong>Advanced Signal Processing</strong></p>
         <p style="margin-top: 0.5rem;">EEG Analysis | Machine Learning | Healthcare AI</p>
     </div>
@@ -287,13 +323,13 @@ def show_analysis_page():
         st.session_state.page = 'home'
         st.rerun()
     
-    st.markdown('<h1 class="main-title"> EEG Seizure Detection System</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">EEG Seizure Detection System</h1>', unsafe_allow_html=True)
     
     # Load model
     model, scaler, pca = load_assets()
     
     if not all([model, scaler, pca]):
-        st.error(" Failed to load required model files. Please check your installation.")
+        st.error("Failed to load required model files. Please check your installation.")
         st.stop()
     
     # Layout
@@ -303,19 +339,6 @@ def show_analysis_page():
     with col1:
         st.markdown('<div class="section-header">Upload EEG Data</div>', unsafe_allow_html=True)
         
-        # st.markdown("""
-        # <div style="background: #e0f2f1; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
-        #     <p style="margin: 0; color: #00695c; font-weight: 500;">
-        #         📋 <strong>File Requirements:</strong>
-        #     </p>
-        #     <ul style="color: #00897b; margin-top: 0.5rem; margin-bottom: 0;">
-        #         <li>CSV format with 178 feature columns</li>
-        #         <li>Each row represents one EEG sample</li>
-        #         <li>Optional: Include 'y' column for validation</li>
-        #     </ul>
-        # </div>
-        # """, unsafe_allow_html=True)
-        
         # File uploader
         uploaded_file = st.file_uploader(
             "Choose your EEG data file",
@@ -324,11 +347,11 @@ def show_analysis_page():
         )
         
         if uploaded_file is not None:
-            st.success(f"File '{uploaded_file.name}' uploaded successfully!")
+            st.success(f"File '{uploaded_file.name}' uploaded successfully.")
             
             # Analyze button
             st.markdown("<br>", unsafe_allow_html=True)
-            analyze_button = st.button(" Analyze EEG Data", use_container_width=True)
+            analyze_button = st.button("Analyze EEG Data", use_container_width=True)
         else:
             analyze_button = False
     
@@ -337,7 +360,7 @@ def show_analysis_page():
         st.markdown('<div class="section-header">Analysis Results</div>', unsafe_allow_html=True)
         
         if uploaded_file is not None and analyze_button:
-            with st.spinner(" Analyzing EEG signals... Please wait."):
+            with st.spinner("Analyzing EEG signals... Please wait."):
                 try:
                     # Load data
                     df_raw = pd.read_csv(uploaded_file)
@@ -374,7 +397,7 @@ def show_analysis_page():
                     if seizure_count > 0:
                         st.markdown(f"""
                         <div class="result-box seizure">
-                            <h2 style="margin: 0;"> SEIZURE ACTIVITY DETECTED</h2>
+                            <h2 style="margin: 0;">SEIZURE ACTIVITY DETECTED</h2>
                             <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
                                 {seizure_count} out of {total} samples show seizure patterns
                             </p>
@@ -383,7 +406,7 @@ def show_analysis_page():
                     else:
                         st.markdown(f"""
                         <div class="result-box no-seizure">
-                            <h2 style="margin: 0;"> NO SEIZURE DETECTED</h2>
+                            <h2 style="margin: 0;">NO SEIZURE DETECTED</h2>
                             <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
                                 All {total} samples appear normal
                             </p>
@@ -398,70 +421,32 @@ def show_analysis_page():
                     metric_col3.metric("Normal", no_seizure_count)
                     
                 except Exception as e:
-                    st.error(f" Error: {str(e)}")
+                    st.error(f"Error: {str(e)}")
                     st.stop()
             
             # ================== Detailed Analysis Section ================== #
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.markdown('<div class="section-header">Detailed Analysis</div>', unsafe_allow_html=True)
             
-            # Visualizations
-            viz_col1, viz_col2 = st.columns(2)
-            
-            with viz_col1:
-                fig_pie = go.Figure(data=[go.Pie(
-                    labels=['No Seizure', 'Seizure'],
-                    values=[no_seizure_count, seizure_count],
-                    hole=0.4,
-                    marker_colors=['#4facfe', '#f5576c']
-                )])
-                fig_pie.update_layout(
-                    title="Prediction Distribution",
-                    height=350
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
-            
-            # with viz_col2:
-            #     confidence_scores = probabilities.max(axis=1)
-            #     fig_hist = px.histogram(
-            #         confidence_scores,
-            #         nbins=30,
-            #         labels={'value': 'Confidence Score'},
-            #         title='Confidence Distribution'
-            #     )
-            #     fig_hist.update_layout(height=350)
-            #     st.plotly_chart(fig_hist, use_container_width=True)
-            
-            # Performance metrics if labels provided
-            # if has_labels:
-            #     st.markdown("<br>", unsafe_allow_html=True)
-            #     st.markdown('<div class="section-header">Model Performance</div>', unsafe_allow_html=True)
-                
-            #     accuracy = accuracy_score(y_true, predictions)
-            #     st.metric("Accuracy", f"{accuracy:.2%}")
-                
-            #     perf_col1, perf_col2 = st.columns(2)
-                
-                # with perf_col1:
-                #     cm = confusion_matrix(y_true, predictions)
-                #     fig_cm = px.imshow(
-                #         cm,
-                #         text_auto=True,
-                #         labels=dict(x="Predicted", y="Actual"),
-                #         x=['No Seizure', 'Seizure'],
-                #         y=['No Seizure', 'Seizure'],
-                #         title="Confusion Matrix",
-                #         color_continuous_scale='Teal'
-                #     )
-                #     st.plotly_chart(fig_cm, use_container_width=True)
-                
-                # with perf_col2:
-                #     report_dict = classification_report(y_true, predictions, output_dict=True)
-                #     report_df = pd.DataFrame(report_dict).transpose()
-                #     st.dataframe(
-                #         report_df.style.format("{:.3f}"),
-                #         use_container_width=True
-                #     )
+            # Bar chart - full width
+            fig_bar = go.Figure(data=[
+                go.Bar(name='Count', x=['No Seizure', 'Seizure'], 
+                       y=[no_seizure_count, seizure_count],
+                       marker_color=['#4facfe', '#f5576c'],
+                       text=[no_seizure_count, seizure_count],
+                       textposition='auto')
+            ])
+            fig_bar.update_layout(
+                title="Prediction Counts",
+                height=400,
+                template="plotly_dark",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#e8eaed'),
+                xaxis_title="Prediction Category",
+                yaxis_title="Number of Samples"
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
             
             # Download results
             st.markdown("<br>", unsafe_allow_html=True)
@@ -472,7 +457,7 @@ def show_analysis_page():
             
             csv = results_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label=" Download Results",
+                label="Download Results",
                 data=csv,
                 file_name=f"eeg_analysis_{uploaded_file.name}",
                 mime="text/csv",
@@ -481,7 +466,7 @@ def show_analysis_page():
             
         else:
             st.markdown(
-                '<div style="text-align: center; color: #95a5a6; font-style: italic; margin-top: 100px; font-size: 1.2rem;">'
+                '<div class="placeholder-text">'
                 'Upload a file and click "Analyze" to see results'
                 '</div>',
                 unsafe_allow_html=True
