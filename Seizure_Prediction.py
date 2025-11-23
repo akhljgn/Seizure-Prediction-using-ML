@@ -75,12 +75,14 @@ st.markdown("""
         text-shadow: 0 2px 4px var(--shadow);
     }
     
-    /* Card styling */
-    div[data-testid="stVerticalBlock"] > div:has(div.element-container) {
+    /* Card styling - apply to containers */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
         background: var(--bg-card);
         padding: 2rem;
         border-radius: 16px;
         box-shadow: 0 10px 30px var(--shadow);
+        margin-bottom: 2rem;
+        min-height: 400px;
     }
     
     /* Section headers */
@@ -254,6 +256,21 @@ st.markdown("""
         font-size: 0.9rem;
         padding: 2rem;
     }
+    
+    /* Center plotly charts */
+    .js-plotly-plot {
+        margin: 0 auto !important;
+    }
+    
+    /* Detailed analysis card */
+    .detailed-analysis {
+        max-width: 1000px;
+        margin: 2rem auto;
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px var(--shadow);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -337,139 +354,157 @@ def show_analysis_page():
     
     # ================== Left Column: Upload EEG Data ================== #
     with col1:
-        st.markdown('<div class="section-header">Upload EEG Data</div>', unsafe_allow_html=True)
-        
-        # File uploader
-        uploaded_file = st.file_uploader(
-            "Choose your EEG data file",
-            type=['csv'],
-            help="Upload a CSV file containing 178 EEG features per sample"
-        )
-        
-        if uploaded_file is not None:
-            st.success(f"File '{uploaded_file.name}' uploaded successfully.")
+        with st.container(border=True):
+            st.markdown('<div class="section-header">Upload EEG Data</div>', unsafe_allow_html=True)
             
-            # Analyze button
-            st.markdown("<br>", unsafe_allow_html=True)
-            analyze_button = st.button("Analyze EEG Data", use_container_width=True)
-        else:
-            analyze_button = False
+            # File uploader
+            uploaded_file = st.file_uploader(
+                "Choose your EEG data file",
+                type=['csv'],
+                help="Upload a CSV file containing 178 EEG features per sample"
+            )
+            
+            if uploaded_file is not None:
+                st.success(f"File '{uploaded_file.name}' uploaded successfully.")
+                
+                # Analyze button
+                st.markdown("<br>", unsafe_allow_html=True)
+                analyze_button = st.button("Analyze EEG Data", use_container_width=True)
+            else:
+                analyze_button = False
     
     # ================== Right Column: Results Panel ================== #
     with col2:
-        st.markdown('<div class="section-header">Analysis Results</div>', unsafe_allow_html=True)
-        
-        if uploaded_file is not None and analyze_button:
-            with st.spinner("Analyzing EEG signals... Please wait."):
-                try:
-                    # Load data
-                    df_raw = pd.read_csv(uploaded_file)
-                    
-                    # Check for labels
-                    has_labels = 'y' in df_raw.columns
-                    if has_labels:
-                        X_raw = df_raw.drop('y', axis=1)
-                        y_true = df_raw['y']
-                    else:
-                        X_raw = df_raw
-                        y_true = None
-                    
-                    # Validate input
-                    if X_raw.shape[1] != 178:
-                        st.error(f"Expected 178 features, but found {X_raw.shape[1]} columns.")
-                        st.stop()
-                    
-                    # Preprocessing pipeline
-                    X_filtered = butter_bandpass_filter(X_raw.values, lowcut=0.5, highcut=50, fs=178)
-                    X_scaled = scaler.transform(X_filtered)
-                    X_pca = pca.transform(X_scaled)
-                    
-                    # Prediction
-                    predictions = model.predict(X_pca)
-                    probabilities = model.predict_proba(X_pca)
-                    
-                    # Calculate metrics
-                    seizure_count = np.sum(predictions == 1)
-                    no_seizure_count = np.sum(predictions == 0)
-                    total = len(predictions)
-                    
-                    # Display main result
-                    if seizure_count > 0:
-                        st.markdown(f"""
-                        <div class="result-box seizure">
-                            <h2 style="margin: 0;">SEIZURE ACTIVITY DETECTED</h2>
-                            <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
-                                {seizure_count} out of {total} samples show seizure patterns
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div class="result-box no-seizure">
-                            <h2 style="margin: 0;">NO SEIZURE DETECTED</h2>
-                            <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
-                                All {total} samples appear normal
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Metrics
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    metric_col1, metric_col2, metric_col3 = st.columns(3)
-                    metric_col1.metric("Total Samples", total)
-                    metric_col2.metric("Seizure", seizure_count)
-                    metric_col3.metric("Normal", no_seizure_count)
-                    
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-                    st.stop()
+        with st.container(border=True):
+            st.markdown('<div class="section-header">Analysis Results</div>', unsafe_allow_html=True)
             
-            # ================== Detailed Analysis Section ================== #
-            st.markdown("<br><br>", unsafe_allow_html=True)
+            if uploaded_file is not None and analyze_button:
+                with st.spinner("Analyzing EEG signals... Please wait."):
+                    try:
+                        # Load data
+                        df_raw = pd.read_csv(uploaded_file)
+                        
+                        # Check for labels
+                        has_labels = 'y' in df_raw.columns
+                        if has_labels:
+                            X_raw = df_raw.drop('y', axis=1)
+                            y_true = df_raw['y']
+                        else:
+                            X_raw = df_raw
+                            y_true = None
+                        
+                        # Validate input
+                        if X_raw.shape[1] != 178:
+                            st.error(f"Expected 178 features, but found {X_raw.shape[1]} columns.")
+                            st.stop()
+                        
+                        # Preprocessing pipeline
+                        X_filtered = butter_bandpass_filter(X_raw.values, lowcut=0.5, highcut=50, fs=178)
+                        X_scaled = scaler.transform(X_filtered)
+                        X_pca = pca.transform(X_scaled)
+                        
+                        # Prediction
+                        predictions = model.predict(X_pca)
+                        probabilities = model.predict_proba(X_pca)
+                        
+                        # Calculate metrics
+                        seizure_count = np.sum(predictions == 1)
+                        no_seizure_count = np.sum(predictions == 0)
+                        total = len(predictions)
+                        
+                        # Display main result
+                        if seizure_count > 0:
+                            st.markdown(f"""
+                            <div class="result-box seizure">
+                                <h2 style="margin: 0;">SEIZURE ACTIVITY DETECTED</h2>
+                                <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
+                                    {seizure_count} out of {total} samples show seizure patterns
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""
+                            <div class="result-box no-seizure">
+                                <h2 style="margin: 0;">NO SEIZURE DETECTED</h2>
+                                <p style="font-size: 1.3rem; margin-top: 1rem; margin-bottom: 0;">
+                                    All {total} samples appear normal
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        # Metrics
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        metric_col1, metric_col2, metric_col3 = st.columns(3)
+                        metric_col1.metric("Total Samples", total)
+                        metric_col2.metric("Seizure", seizure_count)
+                        metric_col3.metric("Normal", no_seizure_count)
+                        
+                        # Store data in session state for detailed analysis
+                        st.session_state.show_details = True
+                        st.session_state.predictions = predictions
+                        st.session_state.seizure_count = seizure_count
+                        st.session_state.no_seizure_count = no_seizure_count
+                        st.session_state.df_raw = df_raw
+                        st.session_state.probabilities = probabilities
+                        st.session_state.uploaded_filename = uploaded_file.name
+                        
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+                        st.stop()
+            else:
+                st.markdown(
+                    '<div class="placeholder-text">'
+                    'Upload a file and click "Analyze" to see results'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+    
+    # ================== Detailed Analysis Section ================== #
+    if hasattr(st.session_state, 'show_details') and st.session_state.show_details:
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        with st.container(border=True):
             st.markdown('<div class="section-header">Detailed Analysis</div>', unsafe_allow_html=True)
             
-            # Bar chart - full width
-            fig_bar = go.Figure(data=[
-                go.Bar(name='Count', x=['No Seizure', 'Seizure'], 
-                       y=[no_seizure_count, seizure_count],
-                       marker_color=['#4facfe', '#f5576c'],
-                       text=[no_seizure_count, seizure_count],
-                       textposition='auto')
-            ])
-            fig_bar.update_layout(
-                title="Prediction Counts",
-                height=400,
-                template="plotly_dark",
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#e8eaed'),
-                xaxis_title="Prediction Category",
-                yaxis_title="Number of Samples"
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
+            # Bar chart - centered with reduced width
+            chart_col1, chart_col2, chart_col3 = st.columns([1, 2, 1])
+            with chart_col2:
+                fig_bar = go.Figure(data=[
+                    go.Bar(name='Count', x=['No Seizure', 'Seizure'], 
+                           y=[st.session_state.no_seizure_count, st.session_state.seizure_count],
+                           marker_color=['#4facfe', '#f5576c'],
+                           text=[st.session_state.no_seizure_count, st.session_state.seizure_count],
+                           textposition='auto',
+                           width=[0.5, 0.5])
+                ])
+                fig_bar.update_layout(
+                    title="Prediction Counts",
+                    height=400,
+                    template="plotly_dark",
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='#e8eaed'),
+                    xaxis_title="Prediction Category",
+                    yaxis_title="Number of Samples",
+                    margin=dict(l=50, r=50, t=50, b=50)
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
             
             # Download results
             st.markdown("<br>", unsafe_allow_html=True)
-            results_df = df_raw.copy()
-            results_df['Prediction'] = predictions
+            results_df = st.session_state.df_raw.copy()
+            results_df['Prediction'] = st.session_state.predictions
             results_df['Prediction_Label'] = results_df['Prediction'].map({0: 'No Seizure', 1: 'Seizure'})
-            results_df['Seizure_Probability'] = probabilities[:, 1]
+            results_df['Seizure_Probability'] = st.session_state.probabilities[:, 1]
             
             csv = results_df.to_csv(index=False).encode('utf-8')
+            
             st.download_button(
                 label="Download Results",
                 data=csv,
-                file_name=f"eeg_analysis_{uploaded_file.name}",
+                file_name=f"eeg_analysis_{st.session_state.uploaded_filename}",
                 mime="text/csv",
                 use_container_width=True
-            )
-            
-        else:
-            st.markdown(
-                '<div class="placeholder-text">'
-                'Upload a file and click "Analyze" to see results'
-                '</div>',
-                unsafe_allow_html=True
             )
 
 # =====================================================================================
