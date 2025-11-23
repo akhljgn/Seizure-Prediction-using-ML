@@ -169,7 +169,7 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
 def load_assets():
     """Loads the ML model, scaler, and PCA object from disk."""
     try:
-        model = joblib.load("random_forest_model3.pkl")
+        model = joblib.load("random_forest_model.pkl")
         scaler = joblib.load("scaler.pkl")
         pca = joblib.load("pca.pkl")
         return model, scaler, pca
